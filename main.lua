@@ -1,8 +1,28 @@
-local soulstone_id = 16893;
-local max_soulstones = 10; -- Configurable
-local soulstone_count = GetItemCount(soulstone_id);
-local destroy_count = soulstone_count - max_soulstones;
+local soulstoneId = 16893;
+local maxSoulstones = 10; -- Configurable
+local frame = Init();
 
-if player:HasItem(soulstone_id) and soulstone_count > max_soulstones then
-    player:RemoveItem(soulstone_id, destroy_count);
+local function destroyItems()
+    local soulstoneCount = GetItemCount(soulstoneId);
+    local destroyCount = soulstoneCount - maxSoulstones;
+
+    if player:HasItem(soulstoneId) and soulstoneCount > maxSoulstones then
+        player:RemoveItem(soulstoneId, destroyCount);
+    end
+end
+
+local function eventHandler(self, event)
+    print("Destroying items");
+    destroyItems();
+end
+
+function Init()
+    local newFrame = CreateFrame("FRAME", "AddonFrame");
+    newFrame:RegisterEvent("ITEM_LOOTED_HANDLER");
+    newFrame:SetScript("UNIT_INVENTORY_CHANGED", eventHandler);
+    return newFrame;
+end
+
+function Disable()
+   frame.UnregisterAllEvents();
 end
