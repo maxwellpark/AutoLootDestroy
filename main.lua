@@ -21,23 +21,45 @@ end
 Init();
 
 function DestroyItems()
-    local hasItem = player:HasItem(itemId);
-    print("HasItem == %s", hasItem);
-    local soulstoneCount = GetItemCount(itemId);
-    print("Player has %s items", soulstoneCount);
+    local itemCount = GetItemCount(itemId);
+    print("Player has %s items with ID %s", itemCount, itemId);
     local bags = GetBags();
-    print(bags);
-    -- Destroy the difference between current and max counts
-    if hasItem and soulstoneCount > maxItemCount then
-        local destroyCount = soulstoneCount - maxItemCount;
-        print("Destroying %s items from bags", destroyCount);
-        -- player:RemoveItem(itemId, destroyCount);
+    print("Bags: " .. bags);
+    local bagCount = #bags;
+    print("Bag count: " .. bagCount);
+    if itemCount <= maxItemCount then
+        print("Player has less items than the max count of %s. Stopping deletion.", maxItemCount);
+        return
+    end
+    local destroyCount = itemCount - maxItemCount;
+    print("Destroying %s items from bags", destroyCount);
+    for bagId = 0,4,1 do
+        for slotId = 0,bags[bagId].slotCount,1 do
+            local itemLink = GetContainerItemLink(bagId, slotId);
+            print("Bag item link: " .. itemLink);
+            local bagItemId = GetContainerItemID(bagId, slotId);
+            print("Bag item ID: " .. bagItemId);
+            if bagItemId == itemId then
+                print("Bag item ID matches ID of item to delete");
+                PickupContainerItem(bagId, slotId);
+                if CursorHasItem() then
+                    print("Deleting cursor item");
+                    DeleteCursorItem();
+                    itemCount = GetItemCount(itemId);
+                    print("Item count = " .. itemCount);
+                    if itemCount <= maxItemCount then
+                        print("Item count reached %s (max). Stopping deletion.", maxItemCount);
+                        return
+                    end
+                end
+            end
+        end
     end
 end
 
 function GetBags()
     local bags = {};
-    for bagId = 0,4,1 do 
+    for bagId = 0,4,1 do
         local name = GetBagName(bagId);
         -- Inventory ID - the bag's inventory ID used in functions like PutItemInBag(inventoryId)
         local invId = ContainerIDToInventoryID(bagId);
@@ -57,7 +79,7 @@ end
 function Init()
     print("Initialising addon...");
     print("Attempting to create frame and subscribe to event '%s'", EVENT_NAME);
-    -- Create frame for subscribing to events 
+    -- Create frame for subscribing to events
     local newFrame = CreateFrame("FRAME", "AddonFrame");
     newFrame:RegisterEvent("ITEM_LOOTED_HANDLER");
     newFrame:SetScript(EVENT_NAME, eventHandler);
