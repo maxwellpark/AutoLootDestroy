@@ -5,6 +5,10 @@ local itemRarities = {0, 1} -- Configurable
 local EVENT_NAME = "UNIT_INVENTORY_CHANGED";
 local DEBUG = true;
 local frame = Init();
+SLASH_ALD1 = "/ald";
+
+-- To get the current version:
+-- /run print((select(4, GetBuildInfo())));
 
 Bag = {};
 Bag.__index = Bag;
@@ -46,7 +50,7 @@ function DestroyItems()
             print("Item rarity: " .. rarity);
             local destroyRarity = table.contains(itemRarities, rarity);
             print("Rarity matches: " .. destroyRarity);
-            if bagItemId == itemId or destroyRarity then
+            if bagItemId == itemId then
                 print("Bag item qualifies for deletion. Picking up item to cursor.");
                 PickupContainerItem(bagId, slotId);
                 if CursorHasItem() then
@@ -97,8 +101,16 @@ local function eventHandler(self, event)
     DestroyItems();
 end
 
+local function setSlashCmds()
+    SlashCmdList["ALD"] = function(msg)
+        print("ALD slash cmd entered");
+        print("Msg: " .. msg);
+    end
+end
+
 function Init()
     print("Initialising addon...");
+    setSlashCmds();
     print("Attempting to create frame and subscribe to event '%s'", EVENT_NAME);
     -- Create frame for subscribing to events
     local newFrame = CreateFrame("FRAME", "AddonFrame");
