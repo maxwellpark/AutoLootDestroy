@@ -1,5 +1,7 @@
 local itemId = 16893; -- Configurable
 local maxItemCount = 10; -- Configurable
+-- Rarities range from poor (0) to heirloom (7)
+local itemRarities = {0, 1} -- Configurable
 local EVENT_NAME = "UNIT_INVENTORY_CHANGED";
 local DEBUG = true;
 local frame = Init();
@@ -39,14 +41,19 @@ function DestroyItems()
             print("Bag item link: " .. itemLink);
             local bagItemId = GetContainerItemID(bagId, slotId);
             print("Bag item ID: " .. bagItemId);
-            if bagItemId == itemId then
-                print("Bag item ID matches ID of item to delete");
+            print("Bag item ID matches: " .. bagItemId == itemId);
+            local rarity = GetItemRarity(bagItemId);
+            print("Item rarity: " .. rarity);
+            local destroyRarity = table.contains(itemRarities, rarity);
+            print("Rarity matches: " .. destroyRarity);
+            if bagItemId == itemId or destroyRarity then
+                print("Bag item qualifies for deletion. Picking up item to cursor.");
                 PickupContainerItem(bagId, slotId);
                 if CursorHasItem() then
                     print("Deleting cursor item");
                     DeleteCursorItem();
                     itemCount = GetItemCount(itemId);
-                    print("Item count = " .. itemCount);
+                    print("New item count: " .. itemCount);
                     if itemCount <= maxItemCount then
                         print("Item count reached %s (max). Stopping deletion.", maxItemCount);
                         return
@@ -69,6 +76,20 @@ function GetBags()
         bags[bagId] = bag;
     end
     return bags;
+end
+
+function GetItemRarity(id)
+    local sName, sLink, iRarity, iLevel, iMinLevel, sType, sSubType, iStackCount = GetItemInfo(id);
+    print("Item with item ID %s and name '%s' has rarity '%s'", itemId, sName, iRarity);
+    return iRarity;
+end
+
+-- Type.method
+function table.contains(table, element)
+    for _, e in ipairs(table) do
+        if e == element then return true end
+    end
+    return false
 end
 
 local function eventHandler(self, event)
