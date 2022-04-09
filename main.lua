@@ -1,11 +1,10 @@
-local itemId = 16893; -- Configurable
+local itemId = 6265; -- Configurable
 local maxItemCount = 10; -- Configurable
 -- Rarities range from poor (0) to heirloom (7)
 local itemRarities = {0, 1} -- Configurable
 local EVENT_NAME = "UNIT_INVENTORY_CHANGED";
 local DEBUG = true;
 local ADDON_NAME = "Auto Loot Destroy";
-local frame = Init();
 SLASH_ALD1 = "/ald";
 
 -- To get the current version:
@@ -24,33 +23,31 @@ function Bag:create(name, bagId, invId, slotCount)
     return bag;
 end
 
--- Entry point
-Init();
-
 function DestroyItems()
+    print("Item ID:", itemId);
     local itemCount = GetItemCount(itemId);
-    print("Player has %s items with ID %s", itemCount, itemId);
+    print("Item count:", itemCount);
     local bags = GetBags();
-    print("Bags: " .. bags);
+    print("Bags:", bags);
     local bagCount = #bags;
-    print("Bag count: " .. bagCount);
+    print("Bag count:", bagCount);
     if itemCount <= maxItemCount then
-        print("Player has less items than the max count of %s. Stopping deletion.", maxItemCount);
+        print("Player has less items than the max count. Stopping deletion.", maxItemCount);
         return
     end
     local destroyCount = itemCount - maxItemCount;
-    print("Destroying %s items from bags", destroyCount);
-    for bagId = 0,4,1 do
-        for slotId = 0,bags[bagId].slotCount,1 do
+    print("Destroy count:", destroyCount);
+    for bagId = 1,4,1 do
+        for slotId = 1,bags[bagId].slotCount,1 do
             local itemLink = GetContainerItemLink(bagId, slotId);
-            print("Bag item link: " .. itemLink);
+            print("Bag item link:", itemLink);
             local bagItemId = GetContainerItemID(bagId, slotId);
-            print("Bag item ID: " .. bagItemId);
-            print("Bag item ID matches: " .. bagItemId == itemId);
-            local rarity = GetItemRarity(bagItemId);
-            print("Item rarity: " .. rarity);
-            local destroyRarity = table.contains(itemRarities, rarity);
-            print("Rarity matches: " .. destroyRarity);
+            print("Bag item ID:", bagItemId);
+            print("Bag item ID matches:", bagItemId == itemId);
+            -- local rarity = GetItemRarity(bagItemId);
+            -- print("Item rarity:", rarity);
+            -- local destroyRarity = table.contains(itemRarities, rarity);
+            -- print("Rarity matches:", destroyRarity);
             if bagItemId == itemId then
                 print("Bag item qualifies for deletion. Picking up item to cursor.");
                 PickupContainerItem(bagId, slotId);
@@ -58,9 +55,10 @@ function DestroyItems()
                     print("Deleting cursor item");
                     DeleteCursorItem();
                     itemCount = GetItemCount(itemId);
-                    print("New item count: " .. itemCount);
+                    print("New item count:", itemCount);
                     if itemCount <= maxItemCount then
-                        print("Item count reached %s (max). Stopping deletion.", maxItemCount);
+                        print("Item count reached max. Stopping deletion.");
+                        print("Max count:", maxItemCount);
                         return
                     end
                 end
@@ -71,12 +69,12 @@ end
 
 function GetBags()
     local bags = {};
-    for bagId = 0,4,1 do
+    for bagId = 1,4,1 do
         local name = GetBagName(bagId);
         -- Inventory ID - the bag's inventory ID used in functions like PutItemInBag(inventoryId)
         local invId = ContainerIDToInventoryID(bagId);
         local slotCount = GetContainerNumSlots(bagId);
-        print("Bag no. %s has name '%s', inventory ID %s, and %s slots", bagId, name, invId, slotCount);
+        print("Bag:", bagId, name, invId, slotCount);
         local bag = Bag:create(name, bagId, invId, slotCount);
         bags[bagId] = bag;
     end
@@ -84,9 +82,9 @@ function GetBags()
 end
 
 function GetItemRarity(id)
-    local sName, sLink, iRarity, iLevel, iMinLevel, sType, sSubType, iStackCount = GetItemInfo(id);
-    print("Item with item ID %s and name '%s' has rarity '%s'", itemId, sName, iRarity);
-    return iRarity;
+    local itemName, itemLink, itemRarity = GetItemInfo(id);
+    print("Item ID " .. id .. " has rarity " .. itemRarity);
+    return itemRarity;
 end
 
 -- Type.method
@@ -122,13 +120,16 @@ function Init()
     print("Initialising addon...");
     setSlashCmds();
     createOptions();
-    print("Attempting to create frame and subscribe to event '%s'", EVENT_NAME);
+    print("Attempting to create frame and subscribe to event", EVENT_NAME);
     -- Create frame for subscribing to events
     local newFrame = CreateFrame("FRAME", "AddonFrame");
-    newFrame:RegisterEvent("ITEM_LOOTED_HANDLER");
-    newFrame:SetScript(EVENT_NAME, eventHandler);
+    newFrame:RegisterEvent(EVENT_NAME);
+    newFrame:SetScript("OnEvent", eventHandler);
     return newFrame;
 end
+
+-- Entry point
+local frame = Init();
 
 function Disable()
     if DEBUG then
