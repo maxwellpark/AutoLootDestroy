@@ -4,6 +4,7 @@ local maxItemCount = 10; -- Configurable
 local itemRarities = {0, 1} -- Configurable
 local EVENT_NAME = "UNIT_INVENTORY_CHANGED";
 local DEBUG = true;
+local ADDON_NAME = "Auto Loot Destroy";
 local frame = Init();
 SLASH_ALD1 = "/ald";
 
@@ -108,9 +109,19 @@ local function setSlashCmds()
     end
 end
 
+local function createOptions()
+    local panel = CreateFrame("Frame");
+    panel.name = ADDON_NAME;
+    InterfaceOptions_AddCategory(panel);
+    local title = panel:CreateFontString("ARTWORK", nil, "GameFontNormalLarge");
+    title:SetPoint("TOP");
+    title:SetText(ADDON_NAME);
+end
+
 function Init()
     print("Initialising addon...");
     setSlashCmds();
+    createOptions();
     print("Attempting to create frame and subscribe to event '%s'", EVENT_NAME);
     -- Create frame for subscribing to events
     local newFrame = CreateFrame("FRAME", "AddonFrame");
