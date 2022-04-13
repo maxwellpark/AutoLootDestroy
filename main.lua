@@ -8,10 +8,7 @@ local ADDON_NAME = "Auto Loot Destroy";
 SLASH_ALD1 = "/ald";
 -- To get the current version:
 -- /run print((select(4, GetBuildInfo())));
-
--- Log to SavedVariables
-Log = {};
-
+Log = {}; -- Log to SavedVariables
 Bag = {};
 Bag.__index = Bag;
 
@@ -26,8 +23,6 @@ function Bag:create(name, bagId, invId, slotCount)
 end
 
 function DestroyItems()
-    -- local logMessage = "";
-    -- logMessage = logMessage .. print("Item ID:", itemId) .. "\n";
     local itemCount = GetItemCount(itemId);
     print("Item count:", itemCount);
     local bags = GetBags();
@@ -41,7 +36,7 @@ function DestroyItems()
     local destroyCount = itemCount - maxItemCount;
     print("Destroy count:", destroyCount);
     print("Looping through bags...");
-    for bagId = 1,5,1 do
+    for bagId = 1,bagCount + 1,1 do
         print("------");
         print("Bag ID:", bagId);
         print("Bag slot count:", bags[bagId].slotCount);
@@ -116,7 +111,8 @@ end
 
 local function eventHandler(self, event)
     print("Event handler called...");
-    DestroyItems();
+    -- Hardware event
+    Button:Click();
 end
 
 local function setSlashCmds()
@@ -142,18 +138,30 @@ function Init()
     createOptions();
     print("Attempting to create frame and subscribe to event", EVENT_NAME);
     -- Create frame for subscribing to events
-    local newFrame = CreateFrame("FRAME", "AddonFrame");
-    newFrame:RegisterEvent(EVENT_NAME);
-    newFrame:SetScript("OnEvent", eventHandler);
-    return newFrame;
+    local frame = CreateFrame("FRAME", "AddonFrame");
+    frame:RegisterEvent(EVENT_NAME);
+    frame:SetScript("OnEvent", eventHandler);
+    return frame;
 end
 
--- Entry point
-local frame = Init();
+local function clickHandler(self, event)
+    print("Click handler called...");
+    DestroyItems();
+end
+
+function CreateButton()
+    local button = CreateFrame("Button");
+    button:SetScript("OnClick", clickHandler);
+    return button;
+end
 
 function Disable()
     if DEBUG then
         print("Disabling addon...");
     end
-   frame.UnregisterAllEvents();
+   Frame.UnregisterAllEvents();
 end
+
+-- Entry point
+Frame = Init();
+Button = CreateButton();
