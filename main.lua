@@ -6,9 +6,11 @@ local EVENT_NAME = "UNIT_INVENTORY_CHANGED";
 local DEBUG = true;
 local ADDON_NAME = "Auto Loot Destroy";
 SLASH_ALD1 = "/ald";
-
 -- To get the current version:
 -- /run print((select(4, GetBuildInfo())));
+
+-- Log to SavedVariables
+Log = {};
 
 Bag = {};
 Bag.__index = Bag;
@@ -24,7 +26,8 @@ function Bag:create(name, bagId, invId, slotCount)
 end
 
 function DestroyItems()
-    print("Item ID:", itemId);
+    -- local logMessage = "";
+    -- logMessage = logMessage .. print("Item ID:", itemId) .. "\n";
     local itemCount = GetItemCount(itemId);
     print("Item count:", itemCount);
     local bags = GetBags();
@@ -37,34 +40,50 @@ function DestroyItems()
     end
     local destroyCount = itemCount - maxItemCount;
     print("Destroy count:", destroyCount);
-    for bagId = 1,4,1 do
+    print("Looping through bags...");
+    for bagId = 1,5,1 do
+        print("------");
+        print("Bag ID:", bagId);
+        print("Bag slot count:", bags[bagId].slotCount);
         for slotId = 1,bags[bagId].slotCount,1 do
-            local itemLink = GetContainerItemLink(bagId, slotId);
-            print("Bag item link:", itemLink);
+            ClearCursor();
+            print("---");
+            print("Slot ID:", slotId);
             local bagItemId = GetContainerItemID(bagId, slotId);
-            print("Bag item ID:", bagItemId);
-            print("Bag item ID matches:", bagItemId == itemId);
-            -- local rarity = GetItemRarity(bagItemId);
-            -- print("Item rarity:", rarity);
-            -- local destroyRarity = table.contains(itemRarities, rarity);
-            -- print("Rarity matches:", destroyRarity);
-            if bagItemId == itemId then
-                print("Bag item qualifies for deletion. Picking up item to cursor.");
-                PickupContainerItem(bagId, slotId);
-                if CursorHasItem() then
-                    print("Deleting cursor item");
-                    DeleteCursorItem();
-                    itemCount = GetItemCount(itemId);
-                    print("New item count:", itemCount);
-                    if itemCount <= maxItemCount then
-                        print("Item count reached max. Stopping deletion.");
-                        print("Max count:", maxItemCount);
-                        return
+            if bagItemId ~= nil then
+                print("Bag item ID:", bagItemId);
+                local itemLink = GetContainerItemLink(bagId, slotId);
+                print("Bag item link:", itemLink);
+                print("Bag item ID matches:", bagItemId == itemId);
+                local texture, itemCount, locked, quality, readable, lootable, itemLink = GetContainerItemInfo(bagId, slotId);
+                -- local rarity = GetItemRarity(bagItiemId);
+                -- print("Item rarity:", rarity);
+                -- local destroyRarity = table.contains(itemRarities, rarity);
+                -- print("Rarity matches:", destroyRarity);
+                if bagItemId == itemId then
+                    print("Bag item qualifies for deletion. Bag ID: " ..  bagId .. ". Slot ID: " .. slotId);
+                    print("Item locked:", locked);
+                    PickupContainerItem(bagId, slotId);
+                    local hasItem = CursorHasItem();
+                    print("hasItem:", hasItem);
+                    if hasItem then
+                    -- if true then
+                        print("Deleting cursor item");
+                        DeleteCursorItem();
+                        itemCount = GetItemCount(itemId);
+                        print("New item count:", itemCount);
+                        if itemCount <= maxItemCount then
+                            print("Item count reached max. Stopping deletion.");
+                            print("Max count:", maxItemCount);
+                            return
+                        end
                     end
                 end
             end
         end
     end
+    -- SavedVariables insert
+    -- tinsert(Log,format("%s: %s",date(),logMessage))
 end
 
 function GetBags()
@@ -118,6 +137,7 @@ end
 
 function Init()
     print("Initialising addon...");
+    print("Destroy item ID:", itemId);
     setSlashCmds();
     createOptions();
     print("Attempting to create frame and subscribe to event", EVENT_NAME);
