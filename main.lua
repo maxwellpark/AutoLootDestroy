@@ -125,11 +125,6 @@ end
 
 function EventHandler()
     print("Event handler called...")
-    print("Event:", event)
-    if arg1 then
-        print("arg1:", arg1)
-        print("Player name:", Name)
-    end
     -- Hardware event for DestroyCursorItem()
     DestroyItemButton:Click()
 end
@@ -145,9 +140,8 @@ end
 
 local function setSlashCmds()
     SlashCmdList["ALD"] = function(input)
-        print("ALD slash cmd entered")
-        print("Input:", input)
-        args = {}
+        print("ALD slash cmd entered. Input:", input)
+        local args = {}
         for arg in input:gmatch("%S+") do
             if arg:upper() ~= "ALD" then
                 table.insert(args, arg)
@@ -155,6 +149,8 @@ local function setSlashCmds()
         end
         print("Cmd args:", table.concat(args, " "))
         if args[1] == nil then
+            InterfaceOptionsFrame_Show()
+            InterfaceOptionsFrame_OpenToCategory(ADDON_NAME)
             return
         end
         -- Get info
@@ -182,15 +178,17 @@ local function createOptions()
     optionsFrame.name = ADDON_NAME
     InterfaceOptions_AddCategory(optionsFrame)
     local title = optionsFrame:CreateFontString("ARTWORK", nil, "GameFontNormalLarge")
-    title:SetPoint("TOP", -8)
+    title:SetPoint("TOP", -64)
     title:SetText(ADDON_NAME)
     -- Item ID edit box
-    -- local idEditBox = CreateFrame("EditBox", "ALD_ItemIdEditBox", optionsFrame);
-    -- InterfaceOptions_AddCategory(idEditBox);
-    -- idEditBox:SetPoint("LEFT", 16, 0);
-    -- idEditBox:SetPoint("RIGHT", -32, 0);
-    -- idEditBox:SetPoint("TOP", 0, -16);
-    -- idEditBox:SetPoint("BOTTOM", 0, 0);
+    local idEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate");
+    idEditBox:SetAutoFocus(false)
+    idEditBox:SetFrameStrata("DIALOG")
+    idEditBox:SetSize(100, 100)
+    idEditBox:SetPoint("TOPLEFT", 8, -8)
+    idEditBox.SetValue = function(_, value)
+        print("Edit box value:", value)
+    end
     -- Item name edit box
 end
 
