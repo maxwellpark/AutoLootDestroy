@@ -48,7 +48,7 @@ function DestroyItems()
     local destroyCount = itemCount - maxItemCount
     print("Destroy count:", destroyCount)
     local destroyCounter = destroyCount
-    for bagId = 1, bagCount + 1, 1 do
+    for bagId = 0, bagCount, 1 do
         print("Bag ID:", bagId)
         if Bags[bagId] ~= nil then
             print("Bag slot count:", Bags[bagId].slotCount)
@@ -56,11 +56,9 @@ function DestroyItems()
                 ClearCursor()
                 local bagItemId = GetContainerItemID(bagId, slotId)
                 if bagItemId ~= nil then
-                    -- print("Bag item ID:", bagItemId);
-                    local itemLink = GetContainerItemLink(bagId, slotId)
-                    -- print("Bag item link:", itemLink);
                     if bagItemId == itemId then
                         print("Bag item qualifies for deletion. Bag ID: " .. bagId .. ". Slot ID: " .. slotId)
+                        print("Picking up container item")
                         PickupContainerItem(bagId, slotId)
                         if CursorHasItem() then
                             print("Deleting cursor item")
@@ -84,12 +82,20 @@ end
 
 function GetBags()
     local bags = {}
-    for bagId = 1, 5, 1 do
+    for bagId = 0, 4, 1 do
         local name = GetBagName(bagId)
         if name ~= nil then
-            -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
-            local invId = ContainerIDToInventoryID(bagId)
-            local slotCount = GetContainerNumSlots(bagId)
+            local invId = nil
+            local slotCount = nil
+            if bagId == 0 then
+                -- Default backpack has no Inventory ID, only a Container ID
+                slotCount = 16
+            else
+                -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
+                invId = ContainerIDToInventoryID(bagId)
+                slotCount = GetContainerNumSlots(bagId)
+                print(format("Found bag with inv ID %s, name '%s'", invId, name))
+            end
             local bag = Bag:create(name, bagId, invId, slotCount)
             bags[bagId] = bag
         end
@@ -155,17 +161,15 @@ local function setSlashCmds()
         end
         -- Get info
         if args[1]:upper() == "INFO" then
-            -- Set max item count
             print(format("ALD info: Item ID = %s. Max Item Count = %s", itemId, maxItemCount))
-        else
-            if args[1]:upper() == "SETMAX" then
-                if args[2] ~= nil then
-                    local num = tonumber(args[2])
-                    if num ~= nil then
-                        maxItemCount = num
-                    else
-                        print("Invalid max item count input:", args[2])
-                    end
+        -- Set max item count
+        elseif args[1]:upper() == "SETMAX" then
+            if args[2] ~= nil then
+                local num = tonumber(args[2])
+                if num ~= nil then
+                    maxItemCount = num
+                else
+                    print("Invalid max item count input:", args[2])
                 end
             end
         end
@@ -178,14 +182,23 @@ local function createOptions()
     optionsFrame.name = ADDON_NAME
     InterfaceOptions_AddCategory(optionsFrame)
     local title = optionsFrame:CreateFontString("ARTWORK", nil, "GameFontNormalLarge")
-    title:SetPoint("TOP", -64)
+    title:SetPoint("TOP", 12, -12)
     title:SetText(ADDON_NAME)
     -- Item ID edit box
-    local idEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate");
+    local idEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate")
     idEditBox:SetAutoFocus(false)
     idEditBox:SetFrameStrata("DIALOG")
-    idEditBox:SetSize(100, 100)
-    idEditBox:SetPoint("TOPLEFT", 8, -8)
+    idEditBox:SetSize(25, 15)
+    idEditBox:CreateFontString("ARTWORK", nil, "GameFontNormalLarge")
+    idEditBox:SetText("Item ID's:")
+    idEditBox:SetPoint("TOPLEFT", 16, -64)
+    idEditBox:SetScript(
+        "OnTextSet",
+        function(self)
+            local text = idEditBox:GetText()
+            print("Edit box text:", text)
+        end
+    )
     idEditBox.SetValue = function(_, value)
         print("Edit box value:", value)
     end
