@@ -213,12 +213,14 @@ local function createInterfaceOptions()
     maxCountEditBox:SetAutoFocus(false)
     maxCountEditBox:SetFrameStrata("DIALOG")
     maxCountEditBox:SetSize(48, 16)
+    maxCountEditBox:SetPoint("TOPLEFT", 152, -64)
+    -- Label for edit box
     local maxCountLabel = optionsFrame:CreateFontString("IdEditBoxLabelFontString", nil, "GameFontNormal")
     maxCountLabel:SetTextScale(1.25)
     maxCountLabel:SetText("Max Item Count:")
     maxCountLabel:SetPoint("TOPLEFT", 16, -64)
-    maxCountEditBox:SetPoint("TOPLEFT", 152, -64)
-    -- Set max item count on exiting options
+    maxCountLabel:SetTextColor(Colours["purpleRgb"][1], Colours["purpleRgb"][2], Colours["purpleRgb"][3], 1)
+    -- Set max item count when exiting options
     InterfaceOptionsFrame:HookScript("OnHide", function()
         local editBoxText = maxCountEditBox:GetText()
         ALD_Print("Edit box input text on hide: " .. editBoxText .. " Edit box text == nil " .. tostring(editBoxText == nil), true)
@@ -232,6 +234,10 @@ local function createInterfaceOptions()
             ALD_Print("Invalid max item count input. Value must be a number.")
         end
         printInfo()
+    end)
+    -- Populate edit box with current settings when opening options
+    InterfaceOptionsFrame:HookScript("OnHide", function()
+        maxCountEditBox.SetText(tostring(ALD_Settings.maxItemCount))
     end)
 end
 
