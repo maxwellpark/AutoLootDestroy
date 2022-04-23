@@ -37,7 +37,7 @@ function Inventory:create(totalSlots, usedSlots, freeSlots)
 end
 
 local function printInfo()
-    ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount), false)
+    ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount))
 end
 
 function DestroyItems()
@@ -174,12 +174,18 @@ local function setSlashCmds()
                 if num ~= nil then
                     maxItemCount = num
                 else
-                    ALD_Print("Invalid max item count input: " .. args[2] .. ". Please use a valid integer", false)
+                    ALD_Print("Invalid max item count input: " .. args[2] .. ". Please use a valid integer")
                 end
             end
+            -- Manual trigger destroy
+        elseif arg1 == "DESTROY" then
+            ALD_Print("Destroying items...", false)
+            DestroyItemButton:Click()
+            -- List commands
         elseif arg1 == "HELP" then
             ALD_Print("Type '/ald info' to get the current settings")
-            ALD_Print("Type '/ald setmax [max item count]' to set the max no. of items")
+            ALD_Print("Type '/ald setmax [max item count]' to set the max no. of items. Or you can use the Interface Options")
+            ALD_Print("Type '/ald destroy' to trigger a destroy manually")
         end
     end
 end
@@ -203,21 +209,17 @@ local function createInterfaceOptions()
     maxCountEditBox:SetPoint("TOPLEFT", 16, -64)
     -- Set max item count on exiting options
     InterfaceOptionsFrame:HookScript("OnHide", function()
-        -- local editBoxNum = maxCountEditBox:GetNumber()
-        -- ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
         local editBoxText = maxCountEditBox:GetText()
         ALD_Print("Edit box input text on hide: " .. editBoxText .. " Edit box text == nil " .. tostring(editBoxText == nil), true)
-        if editBoxText == nil then
-            return
-        end
         local editBoxNum = tonumber(editBoxText)
         ALD_Print("Parsed edit box text num: " .. tostring(editBoxNum), true)
-        if editBoxNum == nil then
-            return
+        if editBoxNum ~= nil then
+            ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
+            ALD_Print("Changing max item count", true)
+            maxItemCount = editBoxNum
+        else
+            ALD_Print("Invalid max item count input. Value must be a number.")
         end
-        ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
-        ALD_Print("Changing max item count", true)
-        maxItemCount = editBoxNum
         printInfo()
     end)
 end
