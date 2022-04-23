@@ -98,7 +98,7 @@ function GetBags()
                 -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
                 invId = ContainerIDToInventoryID(bagId)
                 slotCount = GetContainerNumSlots(bagId)
-                ALD_Print(format("Found bag with inv ID %s, name '%s'", invId, name), true)
+                ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
             end
             local bag = Bag:create(name, bagId, invId, slotCount)
             bags[bagId] = bag
@@ -196,17 +196,20 @@ local function createInterfaceOptions()
     optionsFrame.name = ADDON_NAME
     InterfaceOptions_AddCategory(optionsFrame)
     local title = optionsFrame:CreateFontString("TitleFontString", nil, "GameFontNormalLarge")
+    title:SetTextScale(1.5)
     title:SetPoint("TOP", 12, -12)
     title:SetText(ADDON_NAME)
+    title:SetTextColor(Colours["purpleRgb"][1], Colours["purpleRgb"][2], Colours["purpleRgb"][3], 1)
     -- Item count edit box
     local maxCountEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate")
     maxCountEditBox:SetAutoFocus(false)
     maxCountEditBox:SetFrameStrata("DIALOG")
-    maxCountEditBox:SetSize(100, 15)
-    local maxCountLabel = optionsFrame:CreateFontString("IdEditBoxLabelFontString", nil, "GameFontNormalLarge")
+    maxCountEditBox:SetSize(48, 16)
+    local maxCountLabel = optionsFrame:CreateFontString("IdEditBoxLabelFontString", nil, "GameFontNormal")
+    maxCountLabel:SetTextScale(1.25)
     maxCountLabel:SetText("Max Item Count:")
-    maxCountLabel:SetPoint("TOPLEFT", 16, -32)
-    maxCountEditBox:SetPoint("TOPLEFT", 16, -64)
+    maxCountLabel:SetPoint("TOPLEFT", 16, -64)
+    maxCountEditBox:SetPoint("TOPLEFT", 152, -64)
     -- Set max item count on exiting options
     InterfaceOptionsFrame:HookScript("OnHide", function()
         local editBoxText = maxCountEditBox:GetText()
@@ -263,11 +266,12 @@ end
 
 function GetColours()
     local colours = {}
-    colours["red"] = "cFFFF0000"
-    colours["green"] = "cFF00FF00"
-    colours["blue"] = "cFF0000FF"
-    colours["purple"] = "cFFBF40BF"
-    colours["white"] = "cFFFFFFFF"
+    colours["redHex"] = "cFFFF0000"
+    colours["greenHex"] = "cFF00FF00"
+    colours["blueHex"] = "cFF0000FF"
+    colours["purpleHex"] = "cFFBF40BF"
+    colours["purpleRgb"] = { 0.75, 0.25, 0.75, 1 }
+    colours["whiteHex"] = "cFFFFFFFF"
     return colours
 end
 
@@ -277,7 +281,7 @@ function ALD_Print(msg, debug)
     end
     -- print("|cFFFF0000Auto |cFF00FF00Loot |cFF0000FFDestroy|cFFFFFFFF: |cFF6a0dad" .. msg)
     print(format("|%sAuto |%sLoot |%sDestroy|%s: |%s" .. msg,
-        Colours["red"], Colours["green"], Colours["blue"], Colours["white"], Colours["purple"]))
+        Colours["redHex"], Colours["greenHex"], Colours["blueHex"], Colours["whiteHex"], Colours["purpleHex"]))
 end
 
 -- Entry point
