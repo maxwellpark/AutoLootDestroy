@@ -7,7 +7,6 @@ local DEBUG = true
 local ADDON_NAME = "Auto Loot Destroy"
 local LOOT_EVENT_NAME = "CHAT_MSG_LOOT"
 local WAIT_TIME = 0.1
-local EMPTY_OR_WHITESPACE_REGEX = "/^\\s+$/"
 SLASH_ALD1 = "/ald"
 
 -- To get the current version: /run print((select(4, GetBuildInfo())));
@@ -35,6 +34,10 @@ function Inventory:create(totalSlots, usedSlots, freeSlots)
     inventory.usedSlots = usedSlots
     inventory.freeSlots = freeSlots
     return inventory
+end
+
+local function printInfo()
+    ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount), false)
 end
 
 function DestroyItems()
@@ -163,7 +166,7 @@ local function setSlashCmds()
         local arg1 = args[1]:upper()
         -- Get info
         if arg1 == "INFO" then
-            ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount), false)
+            printInfo()
             -- Set max item count
         elseif arg1 == "SETMAX" then
             if args[2] ~= nil then
@@ -200,17 +203,22 @@ local function createInterfaceOptions()
     maxCountEditBox:SetPoint("TOPLEFT", 16, -64)
     -- Set max item count on exiting options
     InterfaceOptionsFrame:HookScript("OnHide", function()
-        local editBoxNum = maxCountEditBox:GetNumber()
-        ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
+        -- local editBoxNum = maxCountEditBox:GetNumber()
+        -- ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
         local editBoxText = maxCountEditBox:GetText()
-        ALD_Print("Edit box input text on hide: " .. editBoxText, true)
-        local matchBlank = editBoxText:gmatch(EMPTY_OR_WHITESPACE_REGEX)
+        ALD_Print("Edit box input text on hide: " .. editBoxText .. " Edit box text == nil " .. tostring(editBoxText == nil), true)
         if editBoxText == nil then
             return
         end
+        local editBoxNum = tonumber(editBoxText)
+        ALD_Print("Parsed edit box text num: " .. tostring(editBoxNum), true)
+        if editBoxNum == nil then
+            return
+        end
+        ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
         ALD_Print("Changing max item count", true)
         maxItemCount = editBoxNum
-        ALD_Print("Max item count: " .. maxItemCount, false)
+        printInfo()
     end)
 end
 
