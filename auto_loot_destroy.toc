@@ -1,5 +1,10 @@
 ## Interface: 20504
 ## Title: Auto Loot Destroy 
 ## Notes: Automatically destroys looted items 
-## SavedVariables: Log
+## Version: 1.0.0
+## SavedVariables: ALD_Settings
+
+# Scripts
 main.lua
+
+# To get the current WoW version: /run print((select(4, GetBuildInfo())));

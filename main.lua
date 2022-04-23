@@ -1,6 +1,5 @@
 local playerName = UnitName("player")
 local itemId = 6265 -- Configurable
-local maxItemCount = 10 -- Configurable
 -- Rarities range from poor (0) to heirloom (7)
 local itemRarities = { 0, 1 } -- Configurable
 local DEBUG = true
@@ -9,8 +8,17 @@ local LOOT_EVENT_NAME = "CHAT_MSG_LOOT"
 local WAIT_TIME = 0.1
 SLASH_ALD1 = "/ald"
 
--- To get the current version: /run print((select(4, GetBuildInfo())));
-Log = {} -- Log to SavedVariables
+-- SavedVariables
+Settings = {}
+Settings.__index = Settings
+
+function Settings:create(maxCount)
+    local settings = {}
+    setmetatable(settings, Settings)
+    settings.maxItemCount = maxCount
+    return settings
+end
+
 Bag = {}
 Bag.__index = Bag
 Bags = {}
@@ -37,7 +45,7 @@ function Inventory:create(totalSlots, usedSlots, freeSlots)
 end
 
 local function printInfo()
-    ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount))
+    ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, ALD_Settings.maxItemCount))
 end
 
 function DestroyItems()
@@ -45,11 +53,11 @@ function DestroyItems()
     ALD_Print("Current item count: " .. itemCount, true)
     Bags = GetBags()
     local bagCount = #Bags
-    if itemCount <= maxItemCount then
-        ALD_Print("Player has less items than the max count. Stopping deletion. " .. maxItemCount, true)
+    if itemCount <= ALD_Settings.maxItemCount then
+        ALD_Print("Player has less items than the max count. Stopping deletion. " .. ALD_Settings.maxItemCount, true)
         return
     end
-    local destroyCount = itemCount - maxItemCount
+    local destroyCount = itemCount - ALD_Settings.maxItemCount
     ALD_Print("Destroy count: " .. destroyCount, true)
     local destroyCounter = destroyCount
     for bagId = 0, bagCount, 1 do
@@ -70,8 +78,8 @@ function DestroyItems()
                             itemCount = GetItemCount(itemId)
                             destroyCounter = destroyCounter - 1
                             ALD_Print("New destroy counter: " .. destroyCounter, true)
-                            if itemCount <= maxItemCount or destroyCounter <= 0 then
-                                ALD_Print("Item count reached max. " .. maxItemCount .. " Stopping deletion.", true)
+                            if itemCount <= ALD_Settings.maxItemCount or destroyCounter <= 0 then
+                                ALD_Print("Item count reached max. " .. ALD_Settings.maxItemCount .. " Stopping deletion.", true)
                                 return
                             end
                         end
@@ -172,7 +180,7 @@ local function setSlashCmds()
             if args[2] ~= nil then
                 local num = tonumber(args[2])
                 if num ~= nil then
-                    maxItemCount = num
+                    ALD_Settings.maxItemCount = num
                 else
                     ALD_Print("Invalid max item count input: " .. args[2] .. ". Please use a valid integer")
                 end
@@ -219,7 +227,7 @@ local function createInterfaceOptions()
         if editBoxNum ~= nil then
             ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
             ALD_Print("Changing max item count", true)
-            maxItemCount = editBoxNum
+            ALD_Settings.maxItemCount = editBoxNum
         else
             ALD_Print("Invalid max item count input. Value must be a number.")
         end
@@ -238,6 +246,9 @@ function Init()
     setSlashCmds()
     createInterfaceOptions()
     setAltArrowKeyModes()
+    if ALD_Settings == nil then
+        ALD_Settings = Settings:create(15)
+    end
 end
 
 local function clickHandler(self, event)
@@ -279,7 +290,6 @@ function ALD_Print(msg, debug)
     if debug and not DEBUG then
         return
     end
-    -- print("|cFFFF0000Auto |cFF00FF00Loot |cFF0000FFDestroy|cFFFFFFFF: |cFF6a0dad" .. msg)
     print(format("|%sAuto |%sLoot |%sDestroy|%s: |%s" .. msg,
         Colours["redHex"], Colours["greenHex"], Colours["blueHex"], Colours["whiteHex"], Colours["purpleHex"]))
 end
@@ -289,5 +299,3 @@ Colours = GetColours()
 CoreFrame = CreateCoreFrame()
 DestroyItemButton = CreateButton()
 Init()
-
--- EditBox:GetAltArrowKeyMode
