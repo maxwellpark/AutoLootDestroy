@@ -7,6 +7,7 @@ local DEBUG = true
 local ADDON_NAME = "Auto Loot Destroy"
 local LOOT_EVENT_NAME = "CHAT_MSG_LOOT"
 local WAIT_TIME = 0.1
+local EMPTY_OR_WHITESPACE_REGEX = "/^\\s+$/"
 SLASH_ALD1 = "/ald"
 
 -- To get the current version: /run print((select(4, GetBuildInfo())));
@@ -38,36 +39,36 @@ end
 
 function DestroyItems()
     local itemCount = GetItemCount(itemId)
-    AldPrint("Current item count: " .. itemCount, true)
+    ALD_Print("Current item count: " .. itemCount, true)
     Bags = GetBags()
     local bagCount = #Bags
     if itemCount <= maxItemCount then
-        AldPrint("Player has less items than the max count. Stopping deletion. " .. maxItemCount, true)
+        ALD_Print("Player has less items than the max count. Stopping deletion. " .. maxItemCount, true)
         return
     end
     local destroyCount = itemCount - maxItemCount
-    AldPrint("Destroy count: " .. destroyCount, true)
+    ALD_Print("Destroy count: " .. destroyCount, true)
     local destroyCounter = destroyCount
     for bagId = 0, bagCount, 1 do
-        AldPrint("Bag ID: " .. bagId, true)
+        ALD_Print("Bag ID: " .. bagId, true)
         if Bags[bagId] ~= nil then
-            AldPrint("Bag slot count: " .. Bags[bagId].slotCount, true)
+            ALD_Print("Bag slot count: " .. Bags[bagId].slotCount, true)
             for slotId = 1, Bags[bagId].slotCount, 1 do
                 ClearCursor()
                 local bagItemId = GetContainerItemID(bagId, slotId)
                 if bagItemId ~= nil then
                     if bagItemId == itemId then
-                        AldPrint("Bag item qualifies for deletion. Bag ID: " .. bagId .. ". Slot ID: " .. slotId, true)
-                        AldPrint("Picking up container item", true)
+                        ALD_Print("Bag item qualifies for deletion. Bag ID: " .. bagId .. ". Slot ID: " .. slotId, true)
+                        ALD_Print("Picking up container item", true)
                         PickupContainerItem(bagId, slotId)
                         if CursorHasItem() then
-                            AldPrint("Deleting cursor item", true)
+                            ALD_Print("Deleting cursor item", true)
                             DeleteCursorItem()
                             itemCount = GetItemCount(itemId)
                             destroyCounter = destroyCounter - 1
-                            AldPrint("New destroy counter: " .. destroyCounter, true)
+                            ALD_Print("New destroy counter: " .. destroyCounter, true)
                             if itemCount <= maxItemCount or destroyCounter <= 0 then
-                                AldPrint("Item count reached max. " .. maxItemCount .. " Stopping deletion.", true)
+                                ALD_Print("Item count reached max. " .. maxItemCount .. " Stopping deletion.", true)
                                 return
                             end
                         end
@@ -94,7 +95,7 @@ function GetBags()
                 -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
                 invId = ContainerIDToInventoryID(bagId)
                 slotCount = GetContainerNumSlots(bagId)
-                AldPrint(format("Found bag with inv ID %s, name '%s'", invId, name), true)
+                ALD_Print(format("Found bag with inv ID %s, name '%s'", invId, name), true)
             end
             local bag = Bag:create(name, bagId, invId, slotCount)
             bags[bagId] = bag
@@ -116,7 +117,7 @@ end
 
 function GetItemRarity(id)
     local itemName, itemLink, itemRarity = GetItemInfo(id)
-    AldPrint("Item ID " .. id .. " has rarity " .. itemRarity, true)
+    ALD_Print("Item ID " .. id .. " has rarity " .. itemRarity, true)
     return itemRarity
 end
 
@@ -130,14 +131,14 @@ function table.contains(table, element)
 end
 
 function EventHandler()
-    AldPrint("Event handler called...", true)
+    ALD_Print("Event handler called...", true)
     -- Hardware event for DestroyCursorItem()
     DestroyItemButton:Click()
 end
 
 function EventHandlerWait(self, event, arg1, arg2, arg3, arg4, arg5)
-    AldPrint("Event: " .. event, true)
-    AldPrint(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", arg1, arg2, arg3, arg4, arg5), true)
+    ALD_Print("Event: " .. event, true)
+    ALD_Print(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", arg1, arg2, arg3, arg4, arg5), true)
     if arg5 ~= playerName then
         return
     end
@@ -146,14 +147,14 @@ end
 
 local function setSlashCmds()
     SlashCmdList["ALD"] = function(input)
-        AldPrint("ALD slash cmd entered. Input: " .. input, true)
+        ALD_Print("ALD slash cmd entered. Input: " .. input, true)
         local args = {}
         for arg in input:gmatch("%S+") do
             if arg:upper() ~= "ALD" then
                 table.insert(args, arg)
             end
         end
-        AldPrint("Cmd args: " .. table.concat(args, " "), true)
+        ALD_Print("Cmd args: " .. table.concat(args, " "), true)
         if args[1] == nil then
             InterfaceOptionsFrame_Show()
             InterfaceOptionsFrame_OpenToCategory(ADDON_NAME)
@@ -162,7 +163,7 @@ local function setSlashCmds()
         local arg1 = args[1]:upper()
         -- Get info
         if arg1 == "INFO" then
-            AldPrint(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount), false)
+            ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, maxItemCount), false)
             -- Set max item count
         elseif arg1 == "SETMAX" then
             if args[2] ~= nil then
@@ -170,58 +171,73 @@ local function setSlashCmds()
                 if num ~= nil then
                     maxItemCount = num
                 else
-                    AldPrint("Invalid max item count input: " .. args[2] .. ". Please use a valid integer", false)
+                    ALD_Print("Invalid max item count input: " .. args[2] .. ". Please use a valid integer", false)
                 end
             end
         elseif arg1 == "HELP" then
-            AldPrint("Type '/ald info' to get the current settings")
-            AldPrint("Type '/ald setmax [max item count]' to set the max no. of items")
+            ALD_Print("Type '/ald info' to get the current settings")
+            ALD_Print("Type '/ald setmax [max item count]' to set the max no. of items")
         end
     end
 end
 
-local function createOptions()
+local function createInterfaceOptions()
     -- Container
     local optionsFrame = CreateFrame("Frame", "ALD_OptionsFrame")
     optionsFrame.name = ADDON_NAME
     InterfaceOptions_AddCategory(optionsFrame)
-    local title = optionsFrame:CreateFontString("ARTWORK", nil, "GameFontNormalLarge")
+    local title = optionsFrame:CreateFontString("TitleFontString", nil, "GameFontNormalLarge")
     title:SetPoint("TOP", 12, -12)
     title:SetText(ADDON_NAME)
-    -- Item ID edit box
-    local idEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate")
-    idEditBox:SetAutoFocus(false)
-    idEditBox:SetFrameStrata("DIALOG")
-    idEditBox:SetSize(25, 15)
-    idEditBox:CreateFontString("ARTWORK", nil, "GameFontNormalLarge")
-    idEditBox:SetText("Item ID's:")
-    idEditBox:SetPoint("TOPLEFT", 16, -64)
-    idEditBox:SetScript(
-        "OnTextSet",
-        function(self)
-            local text = idEditBox:GetText()
-            AldPrint("Edit box text: " .. text)
+    -- Item count edit box
+    local maxCountEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate")
+    maxCountEditBox:SetAutoFocus(false)
+    maxCountEditBox:SetFrameStrata("DIALOG")
+    maxCountEditBox:SetSize(100, 15)
+    local maxCountLabel = optionsFrame:CreateFontString("IdEditBoxLabelFontString", nil, "GameFontNormalLarge")
+    maxCountLabel:SetText("Max Item Count:")
+    maxCountLabel:SetPoint("TOPLEFT", 16, -32)
+    maxCountEditBox:SetPoint("TOPLEFT", 16, -64)
+    -- Set max item count on exiting options
+    InterfaceOptionsFrame:HookScript("OnHide", function()
+        local editBoxNum = maxCountEditBox:GetNumber()
+        ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
+        local editBoxText = maxCountEditBox:GetText()
+        ALD_Print("Edit box input text on hide: " .. editBoxText, true)
+        local matchBlank = editBoxText:gmatch(EMPTY_OR_WHITESPACE_REGEX)
+        if editBoxText == nil then
+            return
         end
-    )
-    idEditBox.SetValue = function(_, value)
-        AldPrint("Edit box value: " .. value, false)
+        ALD_Print("Changing max item count", true)
+        maxItemCount = editBoxNum
+        ALD_Print("Max item count: " .. maxItemCount, false)
+    end)
+end
+
+local function setAltArrowKeyModes()
+    for i = 1, NUM_CHAT_WINDOWS do
+        _G["ChatFrame" .. i .. "EditBox"]:SetAltArrowKeyMode(false)
     end
 end
 
 function Init()
-    AldPrint("Type '/ald help' to list the slash commands for this addon", false)
+    ALD_Print("Type '/ald help' to list the slash commands for this addon", false)
     setSlashCmds()
-    createOptions()
+    createInterfaceOptions()
+    setAltArrowKeyModes()
+end
+
+local function clickHandler(self, event)
+    ALD_Print("Click handler called...", true)
+    DestroyItems()
+end
+
+function CreateCoreFrame()
     -- Create frame for subscribing to events
     local coreFrame = CreateFrame("FRAME", "ALD_CoreFrame")
     coreFrame:RegisterEvent(LOOT_EVENT_NAME)
     coreFrame:SetScript("OnEvent", EventHandlerWait)
     return coreFrame
-end
-
-local function clickHandler(self, event)
-    AldPrint("Click handler called...")
-    DestroyItems()
 end
 
 function CreateButton()
@@ -231,19 +247,33 @@ function CreateButton()
 end
 
 function Disable()
-    AldPrint("Disabling addon...", true)
+    ALD_Print("Disabling addon...", true)
     CoreFrame.UnregisterAllEvents()
 end
 
-function AldPrint(msg, debug)
-    print("debug:", debug)
-    print("DEBUG:", DEBUG)
+function GetColours()
+    local colours = {}
+    colours["red"] = "cFFFF0000"
+    colours["green"] = "cFF00FF00"
+    colours["blue"] = "cFF0000FF"
+    colours["purple"] = "cFFBF40BF"
+    colours["white"] = "cFFFFFFFF"
+    return colours
+end
+
+function ALD_Print(msg, debug)
     if debug and not DEBUG then
         return
     end
-    print("|cFFFF0000Auto |cFF00FF00Loot |cFF0000FFDestroy|cFFFFFFFF: |cFF6a0dad" .. msg)
+    -- print("|cFFFF0000Auto |cFF00FF00Loot |cFF0000FFDestroy|cFFFFFFFF: |cFF6a0dad" .. msg)
+    print(format("|%sAuto |%sLoot |%sDestroy|%s: |%s" .. msg,
+        Colours["red"], Colours["green"], Colours["blue"], Colours["white"], Colours["purple"]))
 end
 
 -- Entry point
-CoreFrame = Init()
+Colours = GetColours()
+CoreFrame = CreateCoreFrame()
 DestroyItemButton = CreateButton()
+Init()
+
+-- EditBox:GetAltArrowKeyMode
