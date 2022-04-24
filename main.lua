@@ -204,8 +204,7 @@ local function createInterfaceOptions()
     local title = optionsFrame:CreateFontString("ALD_TitleFontString", nil, "GameFontNormalLarge")
     title:SetTextScale(1.5)
     title:SetPoint("TOP", 12, -12)
-    title:SetText(ADDON_NAME)
-    title:SetTextColor(Colours["purpleRgb"][1], Colours["purpleRgb"][2], Colours["purpleRgb"][3], 1)
+    title:SetText(format("|%s%s", Colours["purpleHex"], ADDON_NAME))
     -- Item count edit box
     local maxCountEditBox = CreateFrame("EditBox", nil, optionsFrame, "InputBoxTemplate")
     maxCountEditBox:SetAutoFocus(false)
@@ -221,7 +220,7 @@ local function createInterfaceOptions()
     -- Total bag slots text
     local totalSlotsText = optionsFrame:CreateFontString("ALD_TotalSlotsText", nil, "GameFontNormal")
     totalSlotsText:SetTextScale(1.25)
-    totalSlotsText:SetText("Total Bag Slots: " .. tostring(PlayerInventory.totalSlots))
+    totalSlotsText:SetText(format("Total Bag Slots: %s", tostring(Inventory.totalSlots)))
     totalSlotsText:SetPoint("TOPLEFT", 256, -64)
     totalSlotsText:SetTextColor(Colours["purpleRgb"][1], Colours["purpleRgb"][2], Colours["purpleRgb"][3], 1)
     -- Set max item count when exiting options
@@ -259,7 +258,7 @@ function Init()
     createInterfaceOptions()
     setAltArrowKeyModes()
     if ALD_Settings == nil then
-        ALD_Settings = Settings:create(15)
+        ALD_Settings = Settings:create(Inventory.totalSlots)
     end
 end
 
