@@ -116,7 +116,7 @@ end
 function GetInventory(bags)
     local totalSlots = 0
     local freeSlots = 0
-    for bagId = 0, #PlayerBags, 1 do
+    for bagId = 0, #bags, 1 do
         totalSlots = totalSlots + bags[bagId].slotCount
         freeSlots = freeSlots + GetContainerNumFreeSlots(bagId)
     end
@@ -154,6 +154,31 @@ function EventHandlerWait(self, event, arg1, arg2, arg3, arg4, arg5)
     C_Timer.After(WAIT_TIME, EventHandler)
 end
 
+local function round(number)
+    if (number - (number % 0.1)) - (number - (number % 1)) < 0.5 then
+        number = number - (number % 1)
+    else
+        number = (number - (number % 1)) + 1
+    end
+    return number
+end
+
+local function setMaxItemCount(countStr)
+    local countNum = tonumber(countStr)
+    if countNum ~= nil and countNum > 0 then
+        local rounded = round(countNum)
+        -- Prevent floating point value
+        if rounded ~= countNum then
+            ALD_Print(format("Input has been rounded to the nearest integer: %s -> %s", countNum, rounded))
+            countNum = rounded
+        end
+        ALD_Settings.maxItemCount = countNum
+    else
+        ALD_Print("Invalid max item count input: " .. countStr .. ". Please use a valid positive integer")
+    end
+    printInfo()
+end
+
 local function setSlashCmds()
     SlashCmdList["ALD"] = function(input)
         ALD_Print("ALD slash cmd entered. Input: " .. input, true)
@@ -176,12 +201,7 @@ local function setSlashCmds()
             -- Set max item count
         elseif arg1 == "SETMAX" then
             if args[2] ~= nil then
-                local num = tonumber(args[2])
-                if num ~= nil then
-                    ALD_Settings.maxItemCount = num
-                else
-                    ALD_Print("Invalid max item count input: " .. args[2] .. ". Please use a valid integer")
-                end
+                setMaxItemCount(args[2])
             end
             -- Manual trigger destroy
         elseif arg1 == "DESTROY" then
@@ -227,16 +247,7 @@ local function createInterfaceOptions()
     InterfaceOptionsFrame:HookScript("OnHide", function()
         local editBoxText = maxCountEditBox:GetText()
         ALD_Print("Edit box input text on hide: " .. editBoxText .. " Edit box text == nil " .. tostring(editBoxText == nil), true)
-        local editBoxNum = tonumber(editBoxText)
-        ALD_Print("Parsed edit box text num: " .. tostring(editBoxNum), true)
-        if editBoxNum ~= nil then
-            ALD_Print("Edit box input num on hide: " .. editBoxNum, true)
-            ALD_Print("Changing max item count", true)
-            ALD_Settings.maxItemCount = editBoxNum
-        else
-            ALD_Print("Invalid max item count input. Value must be a number.")
-        end
-        printInfo()
+        setMaxItemCount(editBoxText)
     end)
     -- Populate edit box with current settings when opening options
     InterfaceOptionsFrame:HookScript("OnShow", function()
