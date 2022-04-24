@@ -1,13 +1,15 @@
 local playerName = UnitName("player")
-local itemId = 6265 -- Configurable
--- Rarities range from poor (0) to heirloom (7)
-local itemRarities = { 0, 1 } -- Configurable
-local DEBUG = true
+local itemId = 6265
+local DEBUG = false -- Toggle with /ald debug
 local ADDON_NAME = "Auto Loot Destroy"
-local LOOT_EVENT_NAME = "CHAT_MSG_LOOT"
 local WAIT_TIME = 0.1
 SLASH_ALD1 = "/ald"
-
+-- Core addon state tables
+Colours = {}
+CoreFrame = {}
+DestroyItemButton = {}
+PlayerBags = {}
+PlayerInventory = {}
 -- SavedVariables
 Settings = {}
 Settings.__index = Settings
@@ -21,7 +23,6 @@ end
 
 Bag = {}
 Bag.__index = Bag
-PlayerBags = {}
 
 function Bag:create(name, bagId, invId, slotCount)
     local bag = {}
@@ -33,6 +34,30 @@ function Bag:create(name, bagId, invId, slotCount)
     return bag
 end
 
+function GetBags()
+    local bags = {}
+    for bagId = 0, 4, 1 do
+        local name = GetBagName(bagId)
+        ALD_Print(format("Bag ID %s. Bag name: %s", bagId, tostring(name)), true)
+        if name ~= nil then
+            local invId = nil
+            local slotCount = nil
+            if bagId == 0 then
+                -- Default backpack has no Inventory ID, only a Container ID, and 16 slots
+                slotCount = 16
+            else
+                -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
+                invId = ContainerIDToInventoryID(bagId)
+                slotCount = GetContainerNumSlots(bagId)
+                ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
+            end
+            local bag = Bag:create(name, bagId, invId, slotCount)
+            bags[bagId] = bag
+        end
+    end
+    return bags
+end
+
 Inventory = {}
 Inventory.__index = Inventory
 
@@ -41,6 +66,17 @@ function Inventory:create(totalSlots, usedSlots, freeSlots)
     inventory.totalSlots = totalSlots
     inventory.usedSlots = usedSlots
     inventory.freeSlots = freeSlots
+    return inventory
+end
+
+function GetInventory(bags)
+    local totalSlots = 0
+    local freeSlots = 0
+    for bagId = 0, #bags, 1 do
+        totalSlots = totalSlots + bags[bagId].slotCount
+        freeSlots = freeSlots + GetContainerNumFreeSlots(bagId)
+    end
+    local inventory = Inventory:create(totalSlots, totalSlots - freeSlots, freeSlots)
     return inventory
 end
 
@@ -90,40 +126,6 @@ function DestroyItems()
     end
 end
 
-function GetBags()
-    local bags = {}
-    for bagId = 0, 4, 1 do
-        local name = GetBagName(bagId)
-        if name ~= nil then
-            local invId = nil
-            local slotCount = nil
-            if bagId == 0 then
-                -- Default backpack has no Inventory ID, only a Container ID
-                slotCount = 16
-            else
-                -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
-                invId = ContainerIDToInventoryID(bagId)
-                slotCount = GetContainerNumSlots(bagId)
-                ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
-            end
-            local bag = Bag:create(name, bagId, invId, slotCount)
-            bags[bagId] = bag
-        end
-    end
-    return bags
-end
-
-function GetInventory(bags)
-    local totalSlots = 0
-    local freeSlots = 0
-    for bagId = 0, #bags, 1 do
-        totalSlots = totalSlots + bags[bagId].slotCount
-        freeSlots = freeSlots + GetContainerNumFreeSlots(bagId)
-    end
-    local inventory = Inventory:create(totalSlots, totalSlots - freeSlots, freeSlots)
-    return inventory
-end
-
 function GetItemRarity(id)
     local itemName, itemLink, itemRarity = GetItemInfo(id)
     ALD_Print("Item ID " .. id .. " has rarity " .. itemRarity, true)
@@ -139,7 +141,7 @@ function table.contains(table, element)
     return false
 end
 
-function EventHandler()
+function LootEventHandler()
     ALD_Print("Event handler called...", true)
     -- Hardware event for DestroyCursorItem()
     DestroyItemButton:Click()
@@ -147,11 +149,15 @@ end
 
 function EventHandlerWait(self, event, arg1, arg2, arg3, arg4, arg5)
     ALD_Print("Event: " .. event, true)
-    ALD_Print(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", arg1, arg2, arg3, arg4, arg5), true)
-    if arg5 ~= playerName then
-        return
+    if event == "CHAT_MSG_LOOT" then
+        ALD_Print(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", arg1, arg2, arg3, arg4, arg5), true)
+        if arg5 ~= playerName then
+            return
+        end
+        C_Timer.After(WAIT_TIME, LootEventHandler)
+    elseif event == "PLAYER_LOGIN" then
+        LoginEventHandler()
     end
-    C_Timer.After(WAIT_TIME, EventHandler)
 end
 
 local function round(number)
@@ -209,9 +215,12 @@ local function setSlashCmds()
             DestroyItemButton:Click()
             -- List commands
         elseif arg1 == "HELP" then
-            ALD_Print("Type '/ald info' to get the current settings")
-            ALD_Print("Type '/ald setmax [max item count]' to set the max no. of items. Or you can use the Interface Options")
-            ALD_Print("Type '/ald destroy' to trigger a destroy manually")
+            ALD_Print(format("Type |%s/ald info |%sto get the current settings", Colours["greenHex"], Colours["blueHex"]))
+            ALD_Print(format("Type |%s/ald setmax [max item count] |%sto set the max no. of items. Or you can use the Interface Options",
+                Colours["greenHex"], Colours["blueHex"]))
+            ALD_Print(format("Type |%s/ald destroy |%sto trigger a destroy manually", Colours["greenHex"], Colours["blueHex"]))
+        elseif arg1 == "DEBUG" then
+            DEBUG = not DEBUG
         end
     end
 end
@@ -263,14 +272,19 @@ local function setAltArrowKeyModes()
     end
 end
 
-function Init()
-    ALD_Print("Type '/ald help' to list the slash commands for this addon", false)
+function LoginEventHandler()
+    PlayerBags = GetBags()
+    PlayerInventory = GetInventory(PlayerBags)
+    -- Create settings if first time using addon
+    if ALD_Settings == nil then
+        ALD_Print("Thanks for installing " .. ADDON_NAME)
+        ALD_Settings = Settings:create(Inventory.totalSlots)
+    end
+    ALD_Print(format("Type |%s/ald help |%sto list the slash commands for this addon",
+        Colours["greenHex"], Colours["blueHex"]), false)
     setSlashCmds()
     createInterfaceOptions()
     setAltArrowKeyModes()
-    if ALD_Settings == nil then
-        ALD_Settings = Settings:create(Inventory.totalSlots)
-    end
 end
 
 local function clickHandler(self, event)
@@ -281,7 +295,8 @@ end
 function CreateCoreFrame()
     -- Create frame for subscribing to events
     local coreFrame = CreateFrame("FRAME", "ALD_CoreFrame")
-    coreFrame:RegisterEvent(LOOT_EVENT_NAME)
+    coreFrame:RegisterEvent("CHAT_MSG_LOOT")
+    coreFrame:RegisterEvent("PLAYER_LOGIN")
     coreFrame:SetScript("OnEvent", EventHandlerWait)
     return coreFrame
 end
@@ -299,9 +314,9 @@ end
 
 function GetColours()
     local colours = {}
-    colours["redHex"] = "cFFFF0000"
-    colours["greenHex"] = "cFF00FF00"
-    colours["blueHex"] = "cFF0000FF"
+    colours["redHex"] = "cFFFF2400"
+    colours["greenHex"] = "cFF138808"
+    colours["blueHex"] = "cFF6CA0DC"
     colours["purpleHex"] = "cFFBF40BF"
     colours["purpleRgb"] = { 0.75, 0.25, 0.75, 1 }
     colours["whiteHex"] = "cFFFFFFFF"
@@ -312,14 +327,13 @@ function ALD_Print(msg, debug)
     if debug and not DEBUG then
         return
     end
-    print(format("|%sAuto |%sLoot |%sDestroy|%s: |%s" .. msg,
-        Colours["redHex"], Colours["greenHex"], Colours["blueHex"], Colours["whiteHex"], Colours["purpleHex"]))
+    -- print(format("|%sAuto |%sLoot |%sDestroy|%s: |%s" .. tostring(msg),
+    --     Colours["redHex"], Colours["greenHex"], Colours["blueHex"], Colours["whiteHex"], Colours["purpleHex"]))
+    print(format("|%sAuto Loot Destroy|%s: |%s" .. tostring(msg),
+        Colours["purpleHex"], Colours["whiteHex"], Colours["blueHex"]))
 end
 
 -- Entry point
-Colours = GetColours()
 CoreFrame = CreateCoreFrame()
 DestroyItemButton = CreateButton()
-PlayerBags = GetBags()
-PlayerInventory = GetInventory(PlayerBags)
-Init()
+Colours = GetColours()
