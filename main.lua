@@ -21,7 +21,7 @@ end
 
 Bag = {}
 Bag.__index = Bag
-Bags = {}
+PlayerBags = {}
 
 function Bag:create(name, bagId, invId, slotCount)
     local bag = {}
@@ -51,8 +51,8 @@ end
 function DestroyItems()
     local itemCount = GetItemCount(itemId)
     ALD_Print("Current item count: " .. itemCount, true)
-    Bags = GetBags()
-    local bagCount = #Bags
+    PlayerBags = GetBags()
+    local bagCount = #PlayerBags
     if itemCount <= ALD_Settings.maxItemCount then
         ALD_Print("Player has less items than the max count. Stopping deletion. " .. ALD_Settings.maxItemCount, true)
         return
@@ -62,9 +62,9 @@ function DestroyItems()
     local destroyCounter = destroyCount
     for bagId = 0, bagCount, 1 do
         ALD_Print("Bag ID: " .. bagId, true)
-        if Bags[bagId] ~= nil then
-            ALD_Print("Bag slot count: " .. Bags[bagId].slotCount, true)
-            for slotId = 1, Bags[bagId].slotCount, 1 do
+        if PlayerBags[bagId] ~= nil then
+            ALD_Print("Bag slot count: " .. PlayerBags[bagId].slotCount, true)
+            for slotId = 1, PlayerBags[bagId].slotCount, 1 do
                 ClearCursor()
                 local bagItemId = GetContainerItemID(bagId, slotId)
                 if bagItemId ~= nil then
@@ -88,8 +88,6 @@ function DestroyItems()
             end
         end
     end
-    -- SavedVariables insert
-    -- tinsert(Log,format("%s: %s",date(),logMessage))
 end
 
 function GetBags()
@@ -118,7 +116,7 @@ end
 function GetInventory(bags)
     local totalSlots = 0
     local freeSlots = 0
-    for bagId = 1, #Bags, 1 do
+    for bagId = 0, #PlayerBags, 1 do
         totalSlots = totalSlots + bags[bagId].slotCount
         freeSlots = freeSlots + GetContainerNumFreeSlots(bagId)
     end
@@ -203,7 +201,7 @@ local function createInterfaceOptions()
     local optionsFrame = CreateFrame("Frame", "ALD_OptionsFrame")
     optionsFrame.name = ADDON_NAME
     InterfaceOptions_AddCategory(optionsFrame)
-    local title = optionsFrame:CreateFontString("TitleFontString", nil, "GameFontNormalLarge")
+    local title = optionsFrame:CreateFontString("ALD_TitleFontString", nil, "GameFontNormalLarge")
     title:SetTextScale(1.5)
     title:SetPoint("TOP", 12, -12)
     title:SetText(ADDON_NAME)
@@ -215,11 +213,17 @@ local function createInterfaceOptions()
     maxCountEditBox:SetSize(48, 16)
     maxCountEditBox:SetPoint("TOPLEFT", 152, -64)
     -- Label for edit box
-    local maxCountLabel = optionsFrame:CreateFontString("IdEditBoxLabelFontString", nil, "GameFontNormal")
+    local maxCountLabel = optionsFrame:CreateFontString("ALD_IdEditBoxLabelFontString", nil, "GameFontNormal")
     maxCountLabel:SetTextScale(1.25)
     maxCountLabel:SetText("Max Item Count:")
     maxCountLabel:SetPoint("TOPLEFT", 16, -64)
     maxCountLabel:SetTextColor(Colours["purpleRgb"][1], Colours["purpleRgb"][2], Colours["purpleRgb"][3], 1)
+    -- Total bag slots text
+    local totalSlotsText = optionsFrame:CreateFontString("ALD_TotalSlotsText", nil, "GameFontNormal")
+    totalSlotsText:SetTextScale(1.25)
+    totalSlotsText:SetText("Total Bag Slots: " .. tostring(PlayerInventory.totalSlots))
+    totalSlotsText:SetPoint("TOPLEFT", 256, -64)
+    totalSlotsText:SetTextColor(Colours["purpleRgb"][1], Colours["purpleRgb"][2], Colours["purpleRgb"][3], 1)
     -- Set max item count when exiting options
     InterfaceOptionsFrame:HookScript("OnHide", function()
         local editBoxText = maxCountEditBox:GetText()
@@ -236,8 +240,10 @@ local function createInterfaceOptions()
         printInfo()
     end)
     -- Populate edit box with current settings when opening options
-    InterfaceOptionsFrame:HookScript("OnHide", function()
-        maxCountEditBox.SetText(tostring(ALD_Settings.maxItemCount))
+    InterfaceOptionsFrame:HookScript("OnShow", function()
+        PlayerInventory = GetInventory(PlayerBags)
+        totalSlotsText:SetText("Total Bag Slots: " .. tostring(PlayerInventory.totalSlots))
+        maxCountEditBox:SetText(tostring(ALD_Settings.maxItemCount))
     end)
 end
 
@@ -304,4 +310,6 @@ end
 Colours = GetColours()
 CoreFrame = CreateCoreFrame()
 DestroyItemButton = CreateButton()
+PlayerBags = GetBags()
+PlayerInventory = GetInventory(PlayerBags)
 Init()
