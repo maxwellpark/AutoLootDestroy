@@ -1,6 +1,6 @@
 local playerName = UnitName("player")
-local itemId = 6265
-local DEBUG = false -- Toggle with /ald debug
+local ITEM_ID = 6265
+local DEBUG = true -- Toggle with /ald debug
 local ADDON_NAME = "Auto Loot Destroy"
 local WAIT_TIME = 0.1
 SLASH_ALD1 = "/ald"
@@ -38,7 +38,7 @@ function GetBags()
     local bags = {}
     for bagId = 0, 4, 1 do
         local name = GetBagName(bagId)
-        ALD_Print(format("Bag ID %s. Bag name: %s", bagId, tostring(name)), true)
+        -- ALD_Print(format("Bag ID: %s. Bag name: %s", bagId, tostring(name)), true)
         if name ~= nil then
             local invId = nil
             local slotCount = nil
@@ -49,7 +49,7 @@ function GetBags()
                 -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
                 invId = ContainerIDToInventoryID(bagId)
                 slotCount = GetContainerNumSlots(bagId)
-                ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
+                -- ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
             end
             local bag = Bag:create(name, bagId, invId, slotCount)
             bags[bagId] = bag
@@ -72,6 +72,7 @@ end
 function GetInventory(bags)
     local totalSlots = 0
     local freeSlots = 0
+    ALD_Print("Getting inventory data. Bag count: " .. tostring(#bags), true)
     for bagId = 0, #bags, 1 do
         totalSlots = totalSlots + bags[bagId].slotCount
         freeSlots = freeSlots + GetContainerNumFreeSlots(bagId)
@@ -81,37 +82,37 @@ function GetInventory(bags)
 end
 
 local function printInfo()
-    ALD_Print(format("Item ID = %s. Max Item Count = %s", itemId, ALD_Settings.maxItemCount))
+    ALD_Print(format("Item ID = %s. Max Item Count = %s", ITEM_ID, ALD_Settings.maxItemCount))
 end
 
 function DestroyItems()
-    local itemCount = GetItemCount(itemId)
+    local itemCount = GetItemCount(ITEM_ID)
     ALD_Print("Current item count: " .. itemCount, true)
     PlayerBags = GetBags()
     local bagCount = #PlayerBags
     if itemCount <= ALD_Settings.maxItemCount then
-        ALD_Print("Player has less items than the max count. Stopping deletion. " .. ALD_Settings.maxItemCount, true)
+        ALD_Print(format("Player has less items than the max count of %s. Stopping deletion.", ALD_Settings.maxItemCount), true)
         return
     end
     local destroyCount = itemCount - ALD_Settings.maxItemCount
     ALD_Print("Destroy count: " .. destroyCount, true)
     local destroyCounter = destroyCount
     for bagId = 0, bagCount, 1 do
-        ALD_Print("Bag ID: " .. bagId, true)
+        ALD_Print("Checking Bag with ID: " .. bagId, true)
         if PlayerBags[bagId] ~= nil then
             ALD_Print("Bag slot count: " .. PlayerBags[bagId].slotCount, true)
             for slotId = 1, PlayerBags[bagId].slotCount, 1 do
                 ClearCursor()
                 local bagItemId = GetContainerItemID(bagId, slotId)
                 if bagItemId ~= nil then
-                    if bagItemId == itemId then
+                    if bagItemId == ITEM_ID then
                         ALD_Print("Bag item qualifies for deletion. Bag ID: " .. bagId .. ". Slot ID: " .. slotId, true)
                         ALD_Print("Picking up container item", true)
                         PickupContainerItem(bagId, slotId)
                         if CursorHasItem() then
                             ALD_Print("Deleting cursor item", true)
                             DeleteCursorItem()
-                            itemCount = GetItemCount(itemId)
+                            itemCount = GetItemCount(ITEM_ID)
                             destroyCounter = destroyCounter - 1
                             ALD_Print("New destroy counter: " .. destroyCounter, true)
                             if itemCount <= ALD_Settings.maxItemCount or destroyCounter <= 0 then
@@ -142,21 +143,19 @@ function table.contains(table, element)
 end
 
 function LootEventHandler()
-    ALD_Print("Event handler called...", true)
+    ALD_Print("Loot event handler called...", true)
     -- Hardware event for DestroyCursorItem()
     DestroyItemButton:Click()
 end
 
 function EventHandlerWait(self, event, arg1, arg2, arg3, arg4, arg5)
-    ALD_Print("Event: " .. event, true)
+    ALD_Print("Event fired: " .. event, true)
     if event == "CHAT_MSG_LOOT" then
         ALD_Print(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", arg1, arg2, arg3, arg4, arg5), true)
         if arg5 ~= playerName then
             return
         end
         C_Timer.After(WAIT_TIME, LootEventHandler)
-    elseif event == "PLAYER_LOGIN" then
-        LoginEventHandler()
     end
 end
 
@@ -272,21 +271,6 @@ local function setAltArrowKeyModes()
     end
 end
 
-function LoginEventHandler()
-    PlayerBags = GetBags()
-    PlayerInventory = GetInventory(PlayerBags)
-    -- Create settings if first time using addon
-    if ALD_Settings == nil then
-        ALD_Print("Thanks for installing " .. ADDON_NAME)
-        ALD_Settings = Settings:create(Inventory.totalSlots)
-    end
-    ALD_Print(format("Type |%s/ald help |%sto list the slash commands for this addon",
-        Colours["greenHex"], Colours["blueHex"]), false)
-    setSlashCmds()
-    createInterfaceOptions()
-    setAltArrowKeyModes()
-end
-
 local function clickHandler(self, event)
     ALD_Print("Click handler called...", true)
     DestroyItems()
@@ -296,7 +280,6 @@ function CreateCoreFrame()
     -- Create frame for subscribing to events
     local coreFrame = CreateFrame("FRAME", "ALD_CoreFrame")
     coreFrame:RegisterEvent("CHAT_MSG_LOOT")
-    coreFrame:RegisterEvent("PLAYER_LOGIN")
     coreFrame:SetScript("OnEvent", EventHandlerWait)
     return coreFrame
 end
@@ -314,6 +297,7 @@ end
 
 function GetColours()
     local colours = {}
+    -- Hex codes and rgb for printing coloured text
     colours["redHex"] = "cFFFF2400"
     colours["greenHex"] = "cFF138808"
     colours["blueHex"] = "cFF6CA0DC"
@@ -327,13 +311,25 @@ function ALD_Print(msg, debug)
     if debug and not DEBUG then
         return
     end
-    -- print(format("|%sAuto |%sLoot |%sDestroy|%s: |%s" .. tostring(msg),
-    --     Colours["redHex"], Colours["greenHex"], Colours["blueHex"], Colours["whiteHex"], Colours["purpleHex"]))
     print(format("|%sAuto Loot Destroy|%s: |%s" .. tostring(msg),
         Colours["purpleHex"], Colours["whiteHex"], Colours["blueHex"]))
 end
 
--- Entry point
-CoreFrame = CreateCoreFrame()
-DestroyItemButton = CreateButton()
-Colours = GetColours()
+function Init()
+    CoreFrame = CreateCoreFrame()
+    DestroyItemButton = CreateButton()
+    Colours = GetColours()
+    PlayerBags = GetBags()
+    -- Create settings if first time using addon
+    if ALD_Settings == nil then
+        ALD_Print("Thanks for installing " .. ADDON_NAME)
+        ALD_Settings = Settings:create(Inventory.totalSlots)
+    end
+    ALD_Print(format("Type |%s/ald help |%sto list the slash commands for this addon",
+        Colours["greenHex"], Colours["blueHex"]), false)
+    setSlashCmds()
+    createInterfaceOptions()
+    setAltArrowKeyModes()
+end
+
+Init()
