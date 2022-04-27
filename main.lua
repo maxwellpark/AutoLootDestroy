@@ -2,6 +2,7 @@ local playerName = UnitName("player")
 local ITEM_ID = 6265
 local DEBUG = true -- Toggle with /ald debug
 local ADDON_NAME = "Auto Loot Destroy"
+local TOC_FILE_NAME = "auto_loot_destroy"
 local WAIT_TIME = 0.1
 SLASH_ALD1 = "/ald"
 -- Core addon state tables
@@ -82,7 +83,7 @@ function GetInventory(bags)
 end
 
 local function printInfo()
-    ALD_Print(format("Item ID = %s. Max Item Count = %s", ITEM_ID, ALD_Settings.maxItemCount))
+    ALD_Print(format("Item ID = %s. Max Item Count = %s.", ITEM_ID, ALD_Settings.maxItemCount))
 end
 
 function DestroyItems()
@@ -150,12 +151,18 @@ end
 
 function EventHandlerWait(self, event, arg1, arg2, arg3, arg4, arg5)
     ALD_Print("Event fired: " .. event, true)
+    ALD_Print(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", tostring(arg1), tostring(arg2), tostring(arg3), tostring(arg4), tostring(arg5)), true)
     if event == "CHAT_MSG_LOOT" then
-        ALD_Print(format("Event args: 1. %s, 2. %s, 3. %s, 4. %s, 5. %s", arg1, arg2, arg3, arg4, arg5), true)
         if arg5 ~= playerName then
             return
         end
         C_Timer.After(WAIT_TIME, LootEventHandler)
+        -- Initialise once SavedVariables loaded
+    elseif event == "ADDON_LOADED" then
+        if arg1 == TOC_FILE_NAME then
+            ALD_Print("--- " .. TOC_FILE_NAME .. "loaded. ---", true)
+            Init()
+        end
     end
 end
 
@@ -174,12 +181,12 @@ local function setMaxItemCount(countStr)
         local rounded = round(countNum)
         -- Prevent floating point value
         if rounded ~= countNum then
-            ALD_Print(format("Input has been rounded to the nearest integer: %s -> %s", countNum, rounded))
+            ALD_Print(format("Input has been rounded to the nearest integer: %s -> %s.", countNum, rounded))
             countNum = rounded
         end
         ALD_Settings.maxItemCount = countNum
     else
-        ALD_Print("Invalid max item count input: " .. countStr .. ". Please use a valid positive integer")
+        ALD_Print("Invalid max item count input: " .. countStr .. ". Please use a valid positive integer.")
     end
     printInfo()
 end
@@ -214,10 +221,10 @@ local function setSlashCmds()
             DestroyItemButton:Click()
             -- List commands
         elseif arg1 == "HELP" then
-            ALD_Print(format("Type |%s/ald info |%sto get the current settings", Colours["greenHex"], Colours["blueHex"]))
-            ALD_Print(format("Type |%s/ald setmax [max item count] |%sto set the max no. of items. Or you can use the Interface Options",
+            ALD_Print(format("Type |%s/ald info |%sto get the current settings.", Colours["greenHex"], Colours["blueHex"]))
+            ALD_Print(format("Type |%s/ald setmax [max item count] |%sto set the max no. of items. Or you can use the Interface Options.",
                 Colours["greenHex"], Colours["blueHex"]))
-            ALD_Print(format("Type |%s/ald destroy |%sto trigger a destroy manually", Colours["greenHex"], Colours["blueHex"]))
+            ALD_Print(format("Type |%s/ald destroy |%sto trigger a destroy manually.", Colours["greenHex"], Colours["blueHex"]))
         elseif arg1 == "DEBUG" then
             DEBUG = not DEBUG
         end
@@ -259,6 +266,7 @@ local function createInterfaceOptions()
     end)
     -- Populate edit box with current settings when opening options
     InterfaceOptionsFrame:HookScript("OnShow", function()
+        PlayerBags = GetBags()
         PlayerInventory = GetInventory(PlayerBags)
         totalSlotsText:SetText("Total Bag Slots: " .. tostring(PlayerInventory.totalSlots))
         maxCountEditBox:SetText(tostring(ALD_Settings.maxItemCount))
@@ -280,6 +288,7 @@ function CreateCoreFrame()
     -- Create frame for subscribing to events
     local coreFrame = CreateFrame("FRAME", "ALD_CoreFrame")
     coreFrame:RegisterEvent("CHAT_MSG_LOOT")
+    coreFrame:RegisterEvent("ADDON_LOADED")
     coreFrame:SetScript("OnEvent", EventHandlerWait)
     return coreFrame
 end
@@ -316,20 +325,20 @@ function ALD_Print(msg, debug)
 end
 
 function Init()
-    CoreFrame = CreateCoreFrame()
-    DestroyItemButton = CreateButton()
-    Colours = GetColours()
-    PlayerBags = GetBags()
     -- Create settings if first time using addon
     if ALD_Settings == nil then
-        ALD_Print("Thanks for installing " .. ADDON_NAME)
+        ALD_Print("Thanks for installing " .. ADDON_NAME .. ".")
         ALD_Settings = Settings:create(Inventory.totalSlots)
     end
-    ALD_Print(format("Type |%s/ald help |%sto list the slash commands for this addon",
+    ALD_Print(format("Type |%s/ald help |%sto list the slash commands for this addon.",
         Colours["greenHex"], Colours["blueHex"]), false)
     setSlashCmds()
     createInterfaceOptions()
     setAltArrowKeyModes()
 end
 
-Init()
+-- Entry point
+CoreFrame = CreateCoreFrame()
+DestroyItemButton = CreateButton()
+Colours = GetColours()
+PlayerBags = GetBags()
