@@ -70,12 +70,15 @@ function Inventory:create(totalSlots, usedSlots, freeSlots)
     return inventory
 end
 
-function GetInventory(bags)
+function GetInventory()
+    if PlayerBags == nil then
+        PlayerBags = GetBags()
+    end
     local totalSlots = 0
     local freeSlots = 0
-    ALD_Print("Getting inventory data. Bag count: " .. tostring(#bags), true)
-    for bagId = 0, #bags, 1 do
-        totalSlots = totalSlots + bags[bagId].slotCount
+    ALD_Print("Getting inventory data. Bag count: " .. tostring(#PlayerBags), true)
+    for bagId = 0, #PlayerBags, 1 do
+        totalSlots = totalSlots + PlayerBags[bagId].slotCount
         freeSlots = freeSlots + GetContainerNumFreeSlots(bagId)
     end
     local inventory = Inventory:create(totalSlots, totalSlots - freeSlots, freeSlots)
@@ -328,7 +331,11 @@ function Init()
     -- Create settings if first time using addon
     if ALD_Settings == nil then
         ALD_Print("Thanks for installing " .. ADDON_NAME .. ".")
-        ALD_Settings = Settings:create(Inventory.totalSlots)
+        if PlayerInventory == nil or PlayerInventory.totalSlots == nil then
+            PlayerInventory = GetInventory()
+        end
+        -- No items will be destroyed unless configuration is setup
+        ALD_Settings = Settings:create(PlayerInventory.totalSlots)
     end
     ALD_Print(format("Type |%s/ald help |%sto list the slash commands for this addon.",
         Colours["greenHex"], Colours["blueHex"]), false)
