@@ -5,6 +5,6 @@
 ## SavedVariables: ALD_Settings
 
 # Scripts
-main.lua
+AutoLootDestroy.lua
 
 # To get the current WoW version: /run print((select(4, GetBuildInfo())));

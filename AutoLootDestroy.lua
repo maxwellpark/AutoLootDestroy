@@ -2,7 +2,7 @@ local playerName = UnitName("player")
 local ITEM_ID = 6265
 local DEBUG = true -- Toggle with /ald debug
 local ADDON_NAME = "Auto Loot Destroy"
-local TOC_FILE_NAME = "auto_loot_destroy"
+local TOC_FILE_NAME = "AutoLootDestroy"
 local WAIT_TIME = 0.1
 SLASH_ALD1 = "/ald"
 -- Core addon state tables
@@ -11,7 +11,7 @@ CoreFrame = {}
 DestroyItemButton = {}
 PlayerBags = {}
 PlayerInventory = {}
--- SavedVariables
+-- SavedVariables: ALD_Settings
 Settings = {}
 Settings.__index = Settings
 
