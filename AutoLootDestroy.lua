@@ -39,7 +39,7 @@ function GetBags()
     local bags = {}
     for bagId = 0, 4, 1 do
         local name = GetBagName(bagId)
-        -- ALD_Print(format("Bag ID: %s. Bag name: %s", bagId, tostring(name)), true)
+        ALD_Print(format("Bag ID: %s. Bag name: %s", bagId, tostring(name)), true)
         if name ~= nil then
             local invId = nil
             local slotCount = nil
@@ -50,7 +50,7 @@ function GetBags()
                 -- Inventory ID: the bag's inventory ID used in functions like PutItemInBag(inventoryId)
                 invId = ContainerIDToInventoryID(bagId)
                 slotCount = GetContainerNumSlots(bagId)
-                -- ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
+                ALD_Print(format("Found bag with inv ID '%s', name '%s', and slot count '%s'", invId, name, slotCount), true)
             end
             local bag = Bag:create(name, bagId, invId, slotCount)
             bags[bagId] = bag
@@ -71,7 +71,8 @@ function Inventory:create(totalSlots, usedSlots, freeSlots)
 end
 
 function GetInventory()
-    if PlayerBags == nil then
+    if PlayerBags == nil or #PlayerBags <= 0 then
+        ALD_Print("No bags found while getting inventory. Getting bags...", true)
         PlayerBags = GetBags()
     end
     local totalSlots = 0
